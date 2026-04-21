@@ -29,7 +29,13 @@ let histFilter  = 'all';  // history panel folder filter
 let toastT      = null;   // toast timeout handle
 
 function getModel()    { return localStorage.getItem(MODEL_KEY)    || DEFAULT_MODEL; }
-function getProvider() { return localStorage.getItem(PROVIDER_KEY) || 'ollama'; }
+// Default to OpenRouter when not on localhost (deployed site)
+function getProvider() {
+  const stored = localStorage.getItem(PROVIDER_KEY);
+  if(stored) return stored;
+  const isLocal = ['localhost','127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('192.168.');
+  return isLocal ? 'ollama' : 'openrouter';
+}
 function getORKey()    { return localStorage.getItem(OR_KEY_STORE) || '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'; }
 
 // ══════════════════════════════════════════════════════════════
