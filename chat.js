@@ -648,25 +648,43 @@ async function streamCompletion(messages, typingId){
   let res;
   try {
     if(provider === 'openrouter'){
-      const apiKey = getORKey();
-      if(!apiKey) throw new Error('No OpenRouter API key set. Open ⚙ Model to add one.');
-      res = await fetch(OPENROUTER_URL, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer':  window.location.origin,
-          'X-Title':       'Soulcaste',
-        },
-        signal: abortCtrl.signal,
-        body: JSON.stringify({
-          model:      getModel(),
-          messages,
-          stream:     true,
-          max_tokens: maxTokens,
-          temperature: 0.92,
-        }),
-      });
+      const isLocal = ['localhost','127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('192.168.');
+      if(isLocal){
+        // Local dev: use direct OpenRouter call with user's key
+        const apiKey = getORKey();
+        if(!apiKey) throw new Error('No OpenRouter API key set. Open ⚙ Model to add one.');
+        res = await fetch(OPENROUTER_URL, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer':  window.location.origin,
+            'X-Title':       'Soulcaste',
+          },
+          signal: abortCtrl.signal,
+          body: JSON.stringify({
+            model:      getModel(),
+            messages,
+            stream:     true,
+            max_tokens: maxTokens,
+            temperature: 0.92,
+          }),
+        });
+      } else {
+        // Deployed site: use server-side proxy (API key stored in Netlify env vars)
+        res = await fetch('/api/chat', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal:  abortCtrl.signal,
+          body: JSON.stringify({
+            model:      getModel(),
+            messages,
+            stream:     true,
+            max_tokens: maxTokens,
+            temperature: 0.92,
+          }),
+        });
+      }
     } else {
       res = await fetch(OLLAMA_URL, {
         method:  'POST',
