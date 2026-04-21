@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Chat — CharacterVerse</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<div class="chat-wrap">
+
+  <!-- ════════════════════════════════════
+       SIDEBAR
+  ═════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <a class="back" href="index.html" title="Back to characters">←</a>
+      <span class="sb-brand">CharacterVerse</span>
+      <button class="sb-new-btn" onclick="newConv()" title="New Chat">✏</button>
+    </div>
+
+    <!-- Character profile -->
+    <div class="profile">
+      <div class="p-ava" id="p-ava">
+        <span class="p-online"></span>
+      </div>
+      <div class="p-name" id="p-name">Loading…</div>
+      <div class="p-role" id="p-role"></div>
+      <div class="p-desc" id="p-desc"></div>
+      <div class="p-tags" id="p-tags"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="sb-actions">
+      <div style="text-align:center;padding:.3rem 0 .5rem;">
+        <span style="font-size:.7rem;color:var(--fg3);text-transform:uppercase;letter-spacing:.5px">AI Model</span><br>
+        <code id="model-badge" style="font-size:.82rem;color:var(--purple)">llama3.2</code>
+      </div>
+      <button class="act-btn" onclick="openHistPanel()">📚 All Chats</button>
+      <button class="act-btn" onclick="newConv()">✏ New Chat</button>
+      <button class="act-btn accent" onclick="openStyleModal()">🎨 Tone &amp; Style</button>
+
+      <!-- Reply Length quick picker -->
+      <div style="padding:.1rem .05rem 0">
+        <div style="font-size:.7rem;color:var(--fg3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;text-align:center">Reply Length</div>
+        <div style="display:flex;gap:.35rem">
+          <button class="length-quick-btn" data-len="short"    onclick="setQuickLength('short')"   title="Short replies">⚡ Short</button>
+          <button class="length-quick-btn" data-len="medium"   onclick="setQuickLength('medium')"  title="Medium replies">💬 Med</button>
+          <button class="length-quick-btn" data-len="detailed" onclick="setQuickLength('detailed')" title="Detailed replies">📖 Long</button>
+        </div>
+      </div>
+
+      <button class="act-btn" onclick="copyHistory()">📋 Copy Chat</button>
+      <button class="act-btn" onclick="openModelModal()">⚙ Change Model</button>
+      <button class="act-btn red" onclick="clearHistory()">🗑 Clear This Chat</button>
+    </div>
+  </aside>
+
+  <!-- Sidebar backdrop (mobile) -->
+  <div class="sidebar-backdrop" id="sb-backdrop" onclick="closeSidebar()"></div>
+
+  <!-- ════════════════════════════════════
+       MAIN CHAT
+  ═════════════════════════════════════ -->
+  <main class="chat-main">
+    <!-- Mobile top bar -->
+    <div class="chat-top-bar" id="chat-top-bar">
+      <button class="sb-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="top-info">
+        <div class="top-ava" id="top-ava"></div>
+        <div>
+          <div class="top-name" id="top-name">…</div>
+          <div class="top-status">● Online</div>
+        </div>
+      </div>
+      <button class="mob-hist-btn" onclick="openHistPanel()" title="Chats">📚</button>
+      <button class="mob-hist-btn" onclick="newConv()" title="New Chat">✏</button>
+      <div class="auth-user-menu" id="auth-user-menu" style="display:none;margin-left:.2rem"></div>
+    </div>
+
+    <!-- Ollama status hint (hidden by default) -->
+    <div class="api-warn gone" id="api-warn">
+      <span>⚠ Ollama not detected — make sure it's running.</span>
+      <button onclick="openModelModal()">⚙ Model Info</button>
+    </div>
+
+    <!-- Messages -->
+    <div class="msgs" id="msgs">
+      <!-- Welcome message injected by JS -->
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-box">
+        <textarea
+          id="msg-input"
+          placeholder="Type a message…"
+          rows="1"
+          autocomplete="off"
+          spellcheck="false"
+        ></textarea>
+        <button class="send" id="send-btn" onclick="handleSend()" title="Send (Enter)">
+          ➤
+        </button>
+        <button class="stop-btn" id="stop-btn" onclick="stopStream()" title="Stop generating" style="display:none">
+          ⏹
+        </button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: TONE & STYLE SETTINGS
+════════════════════════════════════════ -->
+<div class="overlay" id="style-overlay">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <span class="modal-title">🎨 Tone &amp; Style</span>
+      <button class="modal-close" onclick="closeStyleModal()">✕</button>
+    </div>
+    <div class="info-box">
+      Customise how <strong id="style-char-name">this character</strong> speaks to you. Settings are saved per character.
+    </div>
+
+    <!-- TONE -->
+    <div class="sty-label">Chat Tone <span style="font-size:.72rem;color:var(--fg3);font-weight:400;margin-left:.4rem">(pick multiple)</span></div>
+    <div class="sty-chips" id="sty-tone">
+      <div class="sty-chip" data-val="default">Default</div>
+      <div class="sty-chip" data-val="casual">💬 Casual</div>
+      <div class="sty-chip" data-val="formal">🔏 Formal</div>
+      <div class="sty-chip" data-val="flirty">💋 Flirty</div>
+      <div class="sty-chip" data-val="aggressive">🔥 Aggressive</div>
+      <div class="sty-chip" data-val="sarcastic">🙄 Sarcastic</div>
+      <div class="sty-chip" data-val="playful">🎉 Playful</div>
+      <div class="sty-chip" data-val="raw">⚡ Raw &amp; Direct</div>
+      <div class="sty-chip" data-val="philosophical">📖 Philosophical</div>
+      <div class="sty-chip" data-val="romantic">🌹 Romantic</div>
+      <div class="sty-chip" data-val="dark">🖤 Dark &amp; Brooding</div>
+    </div>
+
+    <!-- GENDER -->
+    <div class="sty-label">Character Gender Expression</div>
+    <div class="sty-chips" id="sty-gender">
+      <div class="sty-chip" data-val="default">As Defined</div>
+      <div class="sty-chip" data-val="male">♂ Masculine</div>
+      <div class="sty-chip" data-val="female">♀ Feminine</div>
+      <div class="sty-chip" data-val="nonbinary">⚧ Non-binary</div>
+    </div>
+
+    <!-- COUNTRY / REGIONAL TONE -->
+    <div class="sty-label">Regional / Cultural Vibe</div>
+    <div class="sty-chips" id="sty-country">
+      <div class="sty-chip" data-val="default">Neutral</div>
+      <div class="sty-chip" data-val="american">🇺🇸 American</div>
+      <div class="sty-chip" data-val="british">🇬🇧 British</div>
+      <div class="sty-chip" data-val="japanese">🇯🇵 Japanese</div>
+      <div class="sty-chip" data-val="indian">🇮🇳 Indian</div>
+      <div class="sty-chip" data-val="french">🇫🇷 French</div>
+      <div class="sty-chip" data-val="russian">🇷🇺 Russian</div>
+      <div class="sty-chip" data-val="korean">🇰🇷 Korean</div>
+      <div class="sty-chip" data-val="australian">🇦🇺 Australian</div>
+      <div class="sty-chip" data-val="brazilian">🇧🇷 Brazilian</div>
+      <div class="sty-chip" data-val="spanish">🇪🇸 Spanish</div>
+      <div class="sty-chip" data-val="arabic">🇸🇦 Arabic</div>
+      <div class="sty-chip" data-val="mexican">🇲🇽 Mexican</div>
+    </div>
+
+    <!-- CONTENT FILTER -->
+    <div class="sty-label">Content Filter</div>
+    <div class="sty-chips" id="sty-filter">
+      <div class="sty-chip" data-val="off">🔓 Off (Unrestricted)</div>
+      <div class="sty-chip" data-val="standard">🛡 Standard</div>
+    </div>
+    <p class="hint" style="padding:.3rem .2rem 0">Unrestricted mode: no topic filters, no disclaimers, full immersion. Works best with uncensored Ollama models.</p>
+
+    <!-- REPLY LENGTH -->
+    <div class="sty-label" style="margin-top:1rem">Reply Length</div>
+    <div class="sty-chips" id="sty-length">
+      <div class="sty-chip" data-val="short">⚡ Short</div>
+      <div class="sty-chip" data-val="medium">💬 Medium</div>
+      <div class="sty-chip" data-val="detailed">📖 Detailed</div>
+    </div>
+    <p class="hint" style="padding:.3rem .2rem 0">Controls how long the AI's replies are. Short = 1-3 sentences. Medium = a paragraph. Detailed = full explanations.</p>
+
+    <div style="display:flex;gap:.65rem;margin-top:.8rem">
+      <button class="btn btn-ghost" onclick="resetStyle()" style="flex:0 0 auto">Reset</button>
+      <button class="btn btn-primary" onclick="saveStyle()" style="flex:1">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: MODEL / PROVIDER SELECTOR
+════════════════════════════════════════ -->
+<div class="overlay" id="model-overlay">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <span class="modal-title">⚙ AI Provider &amp; Model</span>
+      <button class="modal-close" onclick="closeModelModal()">✕</button>
+    </div>
+
+    <!-- Provider toggle -->
+    <div class="sty-label">Provider</div>
+    <div class="sty-chips" id="provider-chips">
+      <div class="sty-chip" data-val="ollama">🖥 Ollama (Local)</div>
+      <div class="sty-chip" data-val="openrouter">🌐 OpenRouter (Cloud)</div>
+    </div>
+
+    <!-- Ollama section -->
+    <div id="ollama-section">
+      <div class="info-box" style="margin-top:.9rem">
+        Runs <strong>fully on your PC</strong> — no internet, no API key needed.
+      </div>
+      <div class="form-row">
+        <label>Model</label>
+        <select id="model-select-chat">
+          <option value="llama3.2">llama3.2 — Fast, great quality (recommended)</option>
+          <option value="llama3.1:8b">llama3.1:8b — Slightly smarter</option>
+          <option value="mistral">mistral — Fast &amp; creative</option>
+          <option value="gemma2">gemma2 — Google's model</option>
+          <option value="phi3">phi3 — Tiny, great on low-end PCs</option>
+          <option value="llama3.2:1b">llama3.2:1b — Ultra fast, minimal RAM</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Or type custom model name</label>
+        <input type="text" id="model-input-ollama" placeholder="e.g. qwen2.5, deepseek-r1:7b" spellcheck="false"/>
+      </div>
+      <div class="steps">
+        <ol style="margin:0">
+          <li>Pick or type a model, then open a terminal</li>
+          <li>Run: <code>ollama pull &lt;model-name&gt;</code></li>
+          <li>Make sure <strong>Ollama desktop app</strong> is running</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- OpenRouter section -->
+    <div id="openrouter-section" style="display:none">
+      <div class="info-box" style="margin-top:.9rem">
+        Access <strong>100+ AI models</strong> via the cloud. Free tier available.
+        Get your key at <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--purple)">openrouter.ai/keys</a>
+      </div>
+      <div class="form-row">
+        <label>OpenRouter API Key</label>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="password" id="or-api-key" placeholder="sk-or-v1-…" spellcheck="false" style="flex:1"/>
+          <button class="btn btn-ghost" style="padding:.5rem .75rem;font-size:.82rem" onclick="toggleORKeyVis()">👁</button>
+        </div>
+        <p class="hint" style="margin-top:.4rem">Stored locally on your device only.</p>
+      </div>
+      <div class="form-row">
+        <label>Model</label>
+        <select id="model-select-or">
+          <optgroup label="Free / Low Cost">
+            <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (Free)</option>
+            <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (Free)</option>
+            <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (Free)</option>
+            <option value="google/gemma-3-4b-it:free">Gemma 3 4B (Free)</option>
+            <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+            <option value="qwen/qwen3-30b-a3b:free">Qwen3 30B (Free)</option>
+          </optgroup>
+          <optgroup label="Premium">
+            <option value="openai/gpt-4o">GPT-4o</option>
+            <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+            <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+            <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
+            <option value="google/gemini-pro-1.5">Gemini Pro 1.5</option>
+            <option value="google/gemini-flash-1.5">Gemini Flash 1.5</option>
+            <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
+            <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B</option>
+            <option value="x-ai/grok-beta">Grok Beta</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Or type any OpenRouter model ID</label>
+        <input type="text" id="model-input-or" placeholder="e.g. mistralai/mistral-small-3.1-24b-instruct" spellcheck="false"/>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:.65rem;margin-top:.9rem">
+      <button class="btn btn-primary" onclick="saveModel()" style="flex:1">Save &amp; Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HISTORY PANEL (slide-out drawer)
+════════════════════════════════════════ -->
+<div class="hist-panel" id="hist-panel">
+  <div class="hist-panel-head">
+    <span>💬 Conversations</span>
+    <button class="hist-close-btn" onclick="closeHistPanel()">✕</button>
+  </div>
+  <button class="hist-new-conv" onclick="newConv()">✏ New Chat</button>
+  <div class="hist-folder-tabs" id="hist-folder-tabs"></div>
+  <div class="hist-list" id="hist-list"></div>
+</div>
+<div class="hist-bdrop" id="hist-backdrop"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-config.js"></script>
+<script src="crypto-utils.js"></script>
+<script src="auth.js"></script>
+<script src="characters.js"></script>
+<script src="chat.js"></script>
+</body>
+</html>

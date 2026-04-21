@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CharacterVerse — AI Character Chat</title>
+<meta name="description" content="Chat with richly crafted AI characters — warriors, witches, hackers, gods. Free and immersive."/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌌</text></svg>"/>
+<link rel="stylesheet" href="style.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-config.js"></script>
+</head>
+<body>
+
+<!-- ── Particles ───────────────────────── -->
+<div id="particles"></div>
+
+<!-- ══════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════ -->
+<nav class="navbar">
+  <a class="nav-logo" href="index.html">
+    <div class="logo-glyph">🌌</div>
+    <span class="logo-text">CharacterVerse</span>
+  </a>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#characters">Characters</a></li>
+    <li><a href="#create">Create</a></li>
+    <li><a href="#" onclick="openSetupModal();return false" class="nav-pill">🤖 Ollama Setup</a></li>
+  </ul>
+  <button class="nav-hist-btn" onclick="openHomeHist()" title="All Chats">💬 Chats</button>
+  <button class="auth-login-btn" id="auth-login-btn" onclick="openLoginModal()" style="display:none">Sign In</button>
+  <div class="auth-user-menu" id="auth-user-menu" style="display:none"></div>
+  <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+</nav>
+
+<!-- ══════════════════════════════════════
+     HERO
+════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge"><span class="live-dot"></span> 12 Characters · Runs Locally · Zero Cost</div>
+
+  <h1>
+    Talk to Anyone.<br>
+    <span class="grad">Real Personalities.</span>
+  </h1>
+  <p class="hero-sub">
+    Ancient vampires, rogue hackers, elven archmages, Greek gods — every character has a deep backstory
+    and reacts the way <em>they</em> would, not the way a corporate chatbot would.
+  </p>
+
+  <div class="hero-ctas">
+    <a href="#characters" class="btn btn-primary">
+      <span>✦</span> Browse Characters
+    </a>
+    <a href="#" onclick="openCreateModal();return false" class="btn btn-ghost">
+      <span>＋</span> Create Your Own
+    </a>
+  </div>
+
+  <div class="hero-stats">
+    <div>
+      <div class="stat-val">12+</div>
+      <div class="stat-lbl">Characters</div>
+    </div>
+    <div>
+      <div class="stat-val">∞</div>
+      <div class="stat-lbl">Free Chats</div>
+    </div>
+    <div>
+      <div class="stat-val">0</div>
+      <div class="stat-lbl">Restrictions</div>
+    </div>
+    <div>
+      <div class="stat-val">100%</div>
+      <div class="stat-lbl">In-Character</div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="s-mouse"><div class="s-wheel"></div></div>
+    <span>scroll</span>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     MY CHARACTERS (dynamic)
+════════════════════════════════════════ -->
+<section class="section" id="my-chars-section" style="padding-top:0">
+  <div class="section-head">
+    <span class="section-chip custom-section-chip">✨ My Chatbots</span>
+    <h2>Your Custom AI Characters</h2>
+    <p>Characters you built and personalised. Edit or delete them any time.</p>
+  </div>
+  <div class="grid" id="my-chars-grid"></div>
+  <div class="my-chars-empty" id="my-chars-empty" onclick="openCreateModal()">
+    <div class="mce-icon">✨</div>
+    <strong>No custom characters yet</strong>
+    <span>Click here or use the <em>Create Character</em> button below to build your first AI chatbot.</span>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     CHARACTERS SECTION
+════════════════════════════════════════ -->
+<section class="section" id="characters">
+  <div class="section-head">
+    <span class="section-chip">Built-in</span>
+    <h2>Pre-built AI Characters</h2>
+    <p>12 richly crafted personalities — warriors, hackers, gods, witches. Pick one and start chatting.</p>
+  </div>
+
+  <!-- Search + Filter -->
+  <div class="bar">
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input
+        type="text" id="search" placeholder="Search characters…"
+        autocomplete="off" spellcheck="false"
+      />
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+
+  <div class="grid" id="chars-grid"></div>
+
+  <div id="no-results" style="display:none;text-align:center;padding:3rem;color:var(--fg3)">
+    <div style="font-size:3rem;margin-bottom:1rem">🔍</div>
+    <p>No characters matched your search.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     CREATE BANNER
+════════════════════════════════════════ -->
+<section class="section" id="create" style="padding-top:0">
+  <div class="create-banner">
+    <div>
+      <h2>Build Your Own Character</h2>
+      <p>Define a name, personality, backstory and visual style. Your character is saved locally and ready to chat instantly.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openCreateModal()">
+      <span style="font-size:1.2rem">✦</span> Create Character
+    </button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     FOOTER
+════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">CharacterVerse</div>
+    <div class="footer-note">
+      Powered by <a href="https://ollama.com" target="_blank">Ollama</a> (runs locally) ·
+      <a href="#" onclick="openSetupModal();return false">⚙ Setup</a>
+    </div>
+    <div class="footer-note" style="color:var(--fg3)">Your chats stay on your device.</div>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════
+     MODAL: OLLAMA SETUP
+════════════════════════════════════════ -->
+<div class="overlay" id="setup-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">🤖 Ollama Setup</span>
+      <button class="modal-close" onclick="closeSetupModal()">✕</button>
+    </div>
+
+    <div class="info-box">
+      CharacterVerse runs AI <strong>entirely on your PC</strong> using Ollama.
+      No API keys, no accounts, no internet needed for chat. Completely free and private.
+    </div>
+
+    <div class="steps">
+      <ol>
+        <li>Download &amp; install <a href="https://ollama.com" target="_blank">ollama.com</a> (free, Windows/Mac/Linux)</li>
+        <li>Double-click <strong>start.bat</strong> in your <code>e:\personal_Ai</code> folder</li>
+        <li>The site opens at <code>localhost:8080</code> — Ollama handles everything else automatically</li>
+      </ol>
+    </div>
+
+    <div class="form-row">
+      <label>AI Model <span style="color:var(--fg3)">(stored on your machine)</span></label>
+      <select id="model-select" onchange="localStorage.setItem('cv_model',this.value)">
+        <option value="llama3.2">llama3.2 — Fast, great quality (recommended)</option>
+        <option value="llama3.1:8b">llama3.1:8b — Slightly smarter</option>
+        <option value="mistral">mistral — Fast &amp; creative</option>
+        <option value="gemma2">gemma2 — Google's model, very capable</option>
+        <option value="phi3">phi3 — Tiny but smart, great on low-end PCs</option>
+        <option value="llama3.2:1b">llama3.2:1b — Ultra fast, minimal RAM</option>
+      </select>
+      <p class="hint">After picking, open a terminal and run: <code>ollama pull &lt;model-name&gt;</code></p>
+    </div>
+
+    <div class="form-row">
+      <label>Or type a custom model name</label>
+      <input type="text" id="model-custom" placeholder="e.g. qwen2.5, deepseek-r1:7b" spellcheck="false"/>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveModelChoice()" style="width:100%;margin-top:.3rem">Save Model</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: CREATE / EDIT CHARACTER
+════════════════════════════════════════ -->
+<div class="overlay" id="create-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="create-modal-title">✦ Create Character</span>
+      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    </div>
+
+    <div class="form-row">
+      <label>Name</label>
+      <input type="text" id="c-name" placeholder="Character name" maxlength="40"/>
+    </div>
+
+    <div class="form-row">
+      <label>Title / Role</label>
+      <input type="text" id="c-title" placeholder="e.g. Cyberpunk Detective, Dragon Tamer…" maxlength="50"/>
+    </div>
+
+    <div class="form-row">
+      <label>Short Description <span style="color:var(--fg3)">(shown on card)</span></label>
+      <input type="text" id="c-desc" placeholder="One or two sentences about this character" maxlength="160"/>
+    </div>
+
+    <div class="form-row">
+      <label>Gender</label>
+      <div class="sty-chips" id="c-gender-chips">
+        <div class="sty-chip active" data-val="default">Unspecified</div>
+        <div class="sty-chip" data-val="male">♂ Male</div>
+        <div class="sty-chip" data-val="female">♀ Female</div>
+        <div class="sty-chip" data-val="nonbinary">⚧ Non-binary</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Speaks In <span style="color:var(--fg3)">(cultural tone)</span></label>
+      <select id="c-country">
+        <option value="default">Default / Neutral</option>
+        <option value="american">🇺🇸 American</option>
+        <option value="british">🇬🇧 British</option>
+        <option value="japanese">🇯🇵 Japanese</option>
+        <option value="indian">🇮🇳 Indian</option>
+        <option value="french">🇫🇷 French</option>
+        <option value="russian">🇷🇺 Russian</option>
+        <option value="korean">🇰🇷 Korean</option>
+        <option value="australian">🇦🇺 Australian</option>
+        <option value="brazilian">🇧🇷 Brazilian</option>
+        <option value="spanish">🇪🇸 Spanish</option>
+        <option value="arabic">🇸🇦 Arabic</option>
+        <option value="mexican">🇲🇽 Mexican</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>Personality & Backstory <span style="color:var(--fg3)">(system prompt)</span></label>
+      <textarea id="c-persona" rows="5"
+        placeholder="Describe how this character speaks, their history, quirks, and what makes them unique. The more detail, the better they stay in character."></textarea>
+      <p class="hint">Be specific. Mention speech style, values, mannerisms, history.</p>
+    </div>
+
+    <div class="form-row">
+      <label>Avatar Emoji</label>
+      <div class="emoji-row" id="emoji-row"></div>
+    </div>
+
+    <div class="form-row">
+      <label>Color Theme</label>
+      <div class="grad-row" id="grad-row"></div>
+    </div>
+
+    <div class="form-row">
+      <label>Category</label>
+      <select id="c-cat">
+        <option value="fantasy">Fantasy</option>
+        <option value="scifi">Sci-Fi</option>
+        <option value="historical">Historical</option>
+        <option value="mythology">Mythology</option>
+        <option value="anime">Anime</option>
+        <option value="mystical">Mystical</option>
+        <option value="ai">AI</option>
+        <option value="all">Other</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="create-save-btn" onclick="saveChar()" style="width:100%;margin-top:.5rem">
+      ✦ Create Character
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HOME CHAT HISTORY SIDEBAR
+════════════════════════════════════════ -->
+<div class="home-hist-panel" id="home-hist-panel">
+  <div class="home-hist-head">
+    <span>💬 All Chats</span>
+    <button class="hist-close-btn" onclick="closeHomeHist()">✕</button>
+  </div>
+  <div class="home-hist-search">
+    <span>🔍</span>
+    <input type="text" id="home-hist-search" placeholder="Search chats…" oninput="renderHomeHistory(this.value)" spellcheck="false"/>
+  </div>
+  <div class="home-hist-folder-tabs" id="home-hist-folders"></div>
+  <div class="home-hist-list" id="home-hist-list"></div>
+</div>
+<div class="home-hist-bdrop" id="home-hist-bdrop" onclick="closeHomeHist()"></div>
+
+<!-- ══════════════════════════════════════
+     TOAST
+════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+<script src="crypto-utils.js"></script>
+<script src="auth.js"></script>
+<script src="characters.js"></script>
+<script>
+/* ─── Particles ──────────────────────── */
+(function initParticles(){
+  const c = document.getElementById('particles');
+  const colors=['#8b5cf6','#22d3ee','#f472b6','#4ade80','#ffd200'];
+  for(let i=0;i<55;i++){
+    const d=document.createElement('div');
+    d.className='ptcl';
+    const sz=Math.random()*2.5+.8;
+    const col=colors[Math.floor(Math.random()*colors.length)];
+    const dur=Math.random()*25+12;
+    const delay=Math.random()*15;
+    const dx=(Math.random()-0.5)*200;
+    const dy=-(Math.random()*300+100);
+    d.style.cssText=`
+      width:${sz}px;height:${sz}px;
+      background:${col};
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      box-shadow:0 0 ${sz*2.5}px ${col};
+      --dx:${dx}px;--dy:${dy}px;
+      animation-duration:${dur}s;
+      animation-delay:-${delay}s;
+    `;
+    c.appendChild(d);
+  }
+})();
+
+/* ─── Nav hamburger ──────────────────── */
+document.getElementById('hamburger').addEventListener('click',function(){
+  document.getElementById('nav-links').classList.toggle('open');
+});
+
+/* ─── Filter + Grid state ────────────── */
+let activeFilter='all', searchQuery='';
+
+/* ─── Build filter tabs ──────────────── */
+const filtersEl=document.getElementById('filters');
+CATEGORIES.forEach(cat=>{
+  const btn=document.createElement('button');
+  btn.className='f-tab'+(cat.id==='all'?' active':'');
+  btn.textContent=cat.label;
+  btn.dataset.cat=cat.id;
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.f-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter=cat.id;
+    renderCards();
+  });
+  filtersEl.appendChild(btn);
+});
+
+/* ─── Build character cards ──────────── */
+function buildCard(char, isCustom=false){
+  const card=document.createElement('div');
+  card.className='card';
+  card.dataset.id=char.id;
+  card.dataset.cat=char.category||'all';
+
+  const genderTag = char.gender && char.gender !== 'default'
+    ? `<span class="tag">${{male:'♂',female:'♀',nonbinary:'⚧'}[char.gender]||''} ${char.gender}</span>` : '';
+  const countryTag = char.country && char.country !== 'default'
+    ? `<span class="tag">${char.country}</span>` : '';
+
+  card.innerHTML=`
+    ${isCustom?`<button class="card-edit-btn" title="Edit" onclick="openEditModal(event,'${char.id}')">✏</button>`:''}
+    ${isCustom?`<button class="card-del-btn" title="Delete" onclick="delChar(event,'${char.id}')">✕</button>`:''}
+    <div class="card-header">
+      <div class="card-bg" style="background:${char.gradient}"></div>
+      <div class="card-pop">⭐ ${char.popularity||70}</div>
+      <div class="card-ava">${char.emoji}</div>
+    </div>
+    <div class="card-body">
+      <div class="card-name">${esc(char.name)}</div>
+      <div class="card-role">${esc(char.title)}</div>
+      <div class="card-desc">${esc(char.description)}</div>
+      <div class="card-tags">
+        ${(char.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}
+        ${genderTag}${countryTag}
+        ${isCustom?`<span class="tag tag-custom">Custom</span>`:''}
+      </div>
+      <button class="start-btn" onclick="goChat('${char.id}')">
+        💬 Start Chatting
+      </button>
+    </div>
+  `;
+  return card;
+}
+
+function renderCards(){
+  const grid=document.getElementById('chars-grid');
+  grid.innerHTML='';
+  let visible=0;
+  const q=searchQuery.toLowerCase();
+
+  CHARACTERS.forEach(char=>{
+    const matchCat=activeFilter==='all'||char.category===activeFilter;
+    const matchQ=!q||char.name.toLowerCase().includes(q)||
+      char.description.toLowerCase().includes(q)||
+      (char.tags||[]).some(t=>t.toLowerCase().includes(q));
+
+    if(!matchCat||!matchQ) return;
+    visible++;
+    grid.appendChild(buildCard(char,false));
+  });
+
+  document.getElementById('no-results').style.display=visible===0?'flex':'none';
+}
+
+function renderMyChars(){
+  const custom=getCustomCharacters();
+  const grid=document.getElementById('my-chars-grid');
+  const emptyEl=document.getElementById('my-chars-empty');
+  grid.innerHTML='';
+  if(custom.length===0){
+    if(emptyEl) emptyEl.style.display='flex';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display='none';
+  custom.forEach(c=>grid.appendChild(buildCard(c,true)));
+}
+
+/* ─── Search ─────────────────────────── */
+document.getElementById('search').addEventListener('input',function(){
+  searchQuery=this.value;
+  renderCards();
+});
+
+/* ─── Navigate to chat ───────────────── */
+function goChat(id){
+  window.location.href='chat.html?c='+encodeURIComponent(id);
+}
+
+/* ─── Delete custom char ─────────────── */
+function delChar(e,id){
+  e.stopPropagation();
+  const char = getCustomCharacters().find(c=>c.id===id);
+  if(!confirm(`Delete "${char?.name||'this character'}"? This cannot be undone.`)) return;
+  deleteCustomCharacter(id);
+  renderMyChars();
+  showToast('Character deleted','err');
+}
+
+/* ─── HTML escape ────────────────────── */
+function esc(s){
+  return String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* ─── Setup Modal ───────────────────── */
+function openSetupModal(){
+  const cur=localStorage.getItem('cv_model')||'llama3.2';
+  const sel=document.getElementById('model-select');
+  // try to select from list, else put in custom
+  const opt=[...sel.options].find(o=>o.value===cur);
+  if(opt){sel.value=cur;document.getElementById('model-custom').value='';}
+  else{sel.value='llama3.2';document.getElementById('model-custom').value=cur;}
+  document.getElementById('setup-overlay').classList.add('open');
+}
+function closeSetupModal(){
+  document.getElementById('setup-overlay').classList.remove('open');
+}
+function saveModelChoice(){
+  const custom=document.getElementById('model-custom').value.trim();
+  const sel=document.getElementById('model-select').value;
+  const model=custom||sel;
+  localStorage.setItem('cv_model',model);
+  closeSetupModal();
+  showToast(`Model set to "${model}" ✓`,'ok');
+}
+
+/* ─── Create / Edit Character Modal ─── */
+const EMOJIS=['🤖','🗡️','🧙‍♀️','💻','⚡','🚀','⚔️','🧛','🔥','🌙','🛡️','✨','🐉','🧜','🦅','🐺','🎭','🌀','💫','🔮'];
+let selEmoji=EMOJIS[0], selGradIdx=0, editingCharId=null;
+
+function openCreateModal(editId){
+  editingCharId = editId || null;
+  const char = editId ? getCustomCharacters().find(c=>c.id===editId) : null;
+
+  // Pre-set emoji/grad based on char or reset
+  selEmoji  = char ? char.emoji  : EMOJIS[0];
+  selGradIdx = char ? Math.max(0, GRADIENT_PRESETS.findIndex(g=>g.gradient===char.gradient)) : 0;
+
+  // Build emoji picker
+  const er=document.getElementById('emoji-row');
+  er.innerHTML='';
+  EMOJIS.forEach(em=>{
+    const b=document.createElement('div');
+    b.className='e-opt'+(em===selEmoji?' sel':'');
+    b.textContent=em;
+    b.onclick=()=>{ selEmoji=em; er.querySelectorAll('.e-opt').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); };
+    er.appendChild(b);
+  });
+
+  // Build gradient picker
+  const gr=document.getElementById('grad-row');
+  gr.innerHTML='';
+  GRADIENT_PRESETS.forEach((g,i)=>{
+    const b=document.createElement('div');
+    b.className='g-opt'+(i===selGradIdx?' sel':'');
+    b.style.background=g.gradient; b.title=g.name;
+    b.onclick=()=>{ selGradIdx=i; gr.querySelectorAll('.g-opt').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); };
+    gr.appendChild(b);
+  });
+
+  // Fill fields
+  document.getElementById('c-name').value    = char ? char.name        : '';
+  document.getElementById('c-title').value   = char ? char.title       : '';
+  document.getElementById('c-desc').value    = char ? (char.description||'') : '';
+  document.getElementById('c-persona').value = char ? (char.persona||'') : '';
+  document.getElementById('c-cat').value     = char ? (char.category||'fantasy') : 'fantasy';
+  document.getElementById('c-country').value = char ? (char.country||'default')  : 'default';
+
+  // Gender chips
+  const charGender = char ? (char.gender||'default') : 'default';
+  document.querySelectorAll('#c-gender-chips .sty-chip').forEach(c=>{
+    c.classList.toggle('active', c.dataset.val===charGender);
+    c.onclick=()=>{
+      document.querySelectorAll('#c-gender-chips .sty-chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+    };
+  });
+
+  // Modal title & button
+  document.getElementById('create-modal-title').textContent = char ? '✏ Edit Character' : '✦ Create Character';
+  document.getElementById('create-save-btn').textContent    = char ? '✦ Save Changes'   : '✦ Create Character';
+
+  document.getElementById('create-overlay').classList.add('open');
+}
+
+function openEditModal(e, id){
+  e.stopPropagation();
+  openCreateModal(id);
+}
+
+function closeCreateModal(){
+  document.getElementById('create-overlay').classList.remove('open');
+  editingCharId = null;
+}
+
+function saveChar(){
+  const name    = document.getElementById('c-name').value.trim();
+  const title   = document.getElementById('c-title').value.trim();
+  const desc    = document.getElementById('c-desc').value.trim();
+  const persona = document.getElementById('c-persona').value.trim();
+  const cat     = document.getElementById('c-cat').value;
+  const gender  = document.querySelector('#c-gender-chips .sty-chip.active')?.dataset.val || 'default';
+  const country = document.getElementById('c-country').value;
+
+  if(!name||!persona){showToast('Name and Personality are required','err');return;}
+
+  const gp = GRADIENT_PRESETS[selGradIdx];
+  const id = editingCharId || ('custom_'+Date.now());
+
+  // Build system prompt incorporating gender and country cues
+  let genderCue = gender==='male'    ? ' He uses masculine speech patterns.'
+                : gender==='female'  ? ' She uses feminine speech patterns.'
+                : gender==='nonbinary'? ' They use neutral, non-gendered speech.'
+                : '';
+  let countryCue = country!=='default' ? ` Speaks with a ${country} cultural tone and uses ${country} idioms naturally.` : '';
+
+  const systemPrompt =
+    `You are ${name}${title?', '+title:''}.${genderCue}${countryCue}\n\n${persona}\n\nStay in character throughout the conversation. Be authentic, immersive, and react the way this character genuinely would. Don't break character unless absolutely necessary.`;
+
+  const char={
+    id, name,
+    title:   title||'Custom Character',
+    description: desc||'A custom character.',
+    tags:    ['Custom'],
+    emoji:   selEmoji,
+    gradient: gp.gradient,
+    accentColor: gp.accent,
+    glowColor:   gp.glow,
+    category:    cat,
+    popularity:  75,
+    gender, country,
+    persona,        // store raw persona for re-editing
+    systemPrompt,
+    isCustom:  true,
+    suggestions: ['Tell me about yourself','What drives you?','What do you do when things get difficult?',"What's your biggest secret?"],
+  };
+
+  saveCustomCharacter(char);
+  closeCreateModal();
+  renderMyChars();
+  showToast(`${name} ${editingCharId?'updated':'created'}! ✓`,'ok');
+}
+
+/* ─── Toast ──────────────────────────── */
+let toastTimer=null;
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=(type==='ok'?'✓ ':'⚠ ')+msg;
+  t.className='toast show '+(type==='ok'?'ok':'err');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ─── Home Chat History Sidebar ──────── */
+let homeHistFolder = 'all';
+
+async function openHomeHist(){
+  await renderHomeHistory();
+  document.getElementById('home-hist-panel').classList.add('open');
+  document.getElementById('home-hist-bdrop').classList.add('show');
+}
+function closeHomeHist(){
+  document.getElementById('home-hist-panel').classList.remove('open');
+  document.getElementById('home-hist-bdrop').classList.remove('show');
+}
+
+async function getAllCharsWithConvs(){
+  const all = [...CHARACTERS, ...getCustomCharacters()];
+  const results = [];
+  for(const char of all){
+    const raw = localStorage.getItem('cv_convs_' + char.id);
+    if(!raw) continue;
+    try{
+      const dec = await decryptData(raw);
+      const convs = JSON.parse(dec || '[]');
+      if(convs.length > 0) results.push({ char, convs, activeId: localStorage.getItem('cv_active_' + char.id) || '' });
+    } catch(_){ continue; }
+  }
+  return results;
+}
+
+function getAllFolders(entries){
+  const set = new Set();
+  entries.forEach(e => e.convs.forEach(c => { if(c.folder) set.add(c.folder); }));
+  return [...set];
+}
+
+async function renderHomeHistory(searchVal){
+  const q = (searchVal || document.getElementById('home-hist-search').value || '').toLowerCase();
+  const entries = await getAllCharsWithConvs();
+  const folders = getAllFolders(entries);
+
+  // Folder tabs
+  const tabsEl = document.getElementById('home-hist-folders');
+  tabsEl.innerHTML = '';
+  const makeTab = (label, val) => {
+    const b = document.createElement('button');
+    b.className = 'h-ftab' + (homeHistFolder === val ? ' active' : '');
+    b.textContent = label;
+    b.onclick = () => { homeHistFolder = val; renderHomeHistory(); };
+    tabsEl.appendChild(b);
+  };
+  makeTab('All', 'all');
+  folders.forEach(f => makeTab(f, f));
+
+  // List
+  const listEl = document.getElementById('home-hist-list');
+  listEl.innerHTML = '';
+
+  let anyShown = false;
+  entries.forEach(({ char, convs, activeId }) => {
+    const filtered = convs.filter(c => {
+      const matchFolder = homeHistFolder === 'all' || c.folder === homeHistFolder;
+      const matchQ = !q || c.name.toLowerCase().includes(q) ||
+        char.name.toLowerCase().includes(q) ||
+        (c.messages||[]).some(m => m.content.toLowerCase().includes(q));
+      return matchFolder && matchQ;
+    });
+    if(filtered.length === 0) return;
+    anyShown = true;
+
+    // Character group header
+    const grp = document.createElement('div');
+    grp.className = 'hh-char-group';
+    grp.innerHTML = `
+      <div class="hh-char-header" onclick="goChat('${char.id}')">
+        <span class="hh-char-ava">${esc(char.emoji)}</span>
+        <span class="hh-char-name">${esc(char.name)}</span>
+        <span class="hh-char-role">${esc(char.title||'')}</span>
+      </div>`;
+    listEl.appendChild(grp);
+
+    filtered.forEach(conv => {
+      const isActive = conv.id === activeId;
+      const lastMsg  = conv.messages?.length > 0
+        ? conv.messages[conv.messages.length - 1].content.slice(0, 60) + '…'
+        : 'No messages yet';
+      const date = new Date(conv.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+      const item = document.createElement('div');
+      item.className = 'hh-conv-item' + (isActive ? ' active' : '');
+      item.innerHTML = `
+        <div class="hh-body" onclick="openConvFromHome('${char.id}','${conv.id}')">
+          <div class="hh-name">${esc(conv.name)}</div>
+          <div class="hh-meta">
+            <span class="hh-folder">${esc(conv.folder||'General')}</span>
+            <span class="hh-date">${date}</span>
+            ${isActive ? '<span class="hh-active-badge">active</span>' : ''}
+          </div>
+          <div class="hh-preview">${esc(lastMsg)}</div>
+        </div>
+        <div class="hh-actions">
+          <button class="hi-btn red" title="Delete" onclick="deleteHomeConv(event,'${char.id}','${conv.id}')">🗑</button>
+        </div>`;
+      listEl.appendChild(item);
+    });
+  });
+
+  if(!anyShown){
+    listEl.innerHTML = `<div class="hist-empty">
+      ${q ? 'No chats matched your search.' : 'No chat history yet.<br>Pick a character and start chatting!'}
+    </div>`;
+  }
+}
+
+function openConvFromHome(charId, convId){
+  localStorage.setItem('cv_active_' + charId, convId);
+  window.location.href = 'chat.html?c=' + encodeURIComponent(charId);
+}
+
+async function deleteHomeConv(e, charId, convId){
+  e.stopPropagation();
+  const key = 'cv_convs_' + charId;
+  try {
+    const raw = localStorage.getItem(key) || '';
+    const dec = raw ? await decryptData(raw) : '[]';
+    let convs = JSON.parse(dec || '[]');
+    convs = convs.filter(c => c.id !== convId);
+    localStorage.setItem(key, await encryptData(JSON.stringify(convs)));
+    if(localStorage.getItem('cv_active_' + charId) === convId){
+      localStorage.setItem('cv_active_' + charId, convs[0]?.id || '');
+    }
+    renderHomeHistory();
+    showToast('Chat deleted', 'err');
+  } catch(_){}
+}
+
+/* ─── Close modals on backdrop click ─── */
+document.getElementById('setup-overlay').addEventListener('click',function(e){if(e.target===this)closeSetupModal()});
+document.getElementById('create-overlay').addEventListener('click',function(e){if(e.target===this)closeCreateModal()});
+
+/* ─── Init ───────────────────────────── */
+(async function(){
+  await initCrypto();
+  await initAuth();
+  renderCards();
+  renderMyChars();
+})();
+</script>
+</body>
+</html>
