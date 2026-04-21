@@ -690,31 +690,30 @@ async function streamCompletion(messages, typingId){
       } else {
         // On deployed site: use server-side proxy (owner's key), optionally pass user's own key
         const headers = { 'Content-Type': 'application/json' };
-        if(userKey) headers['X-User-Key'] = userKey;  // user's own key takes priority in proxy
+        if(userKey) headers['X-User-Key'] = userKey;
 
-        // Try primary model, then fallbacks if no endpoints
-        let lastErr = null;
-        for(const tryModel of [getModel(), ...OR_FREE_FALLBACKS.filter(m => m !== getModel())]){
-          res = await fetch(PROXY_URL, {
+        const modelsToTry = [getModel(), ...OR_FREE_FALLBACKS.filter(m => m !== getModel())];
+        let succeeded = false;
+        for(const tryModel of modelsToTry){
+          const attempt = await fetch(PROXY_URL, {
             method:  'POST',
             headers,
             signal:  abortCtrl.signal,
-            body: JSON.stringify({
-              model:      tryModel,
-              messages,
-              stream:     true,
-              max_tokens: maxTokens,
-              temperature: 0.92,
-            }),
+            body: JSON.stringify({ model: tryModel, messages, stream: true, max_tokens: maxTokens, temperature: 0.92 }),
           });
-          if(res.ok) break;
-          const body = await res.text().catch(()=>'');
-          if(body.includes('No endpoints found') || body.includes('no endpoints')){
-            lastErr = `No endpoints for ${tryModel}, trying next...`;
-            continue; // try next fallback
+          if(attempt.ok){ res = attempt; succeeded = true; break; }
+          // Read error body to decide whether to retry
+          const errText = await attempt.text().catch(()=>'');
+          const noEndpoints = errText.includes('No endpoints') || errText.includes('no endpoints');
+          if(!noEndpoints){
+            // Not a "no endpoints" issue — surface the real error immediately
+            let msg = `${attempt.status}`;
+            try{ const j = JSON.parse(errText); msg = j?.error?.message || j?.error || msg; }catch(_){}
+            throw new Error(msg);
           }
-          break; // different error — don't retry
+          // else: no endpoints for this model, try next
         }
+        if(!succeeded) throw new Error('All free models are currently offline. Try again in a moment.');
       }
     } else {
       res = await fetch(OLLAMA_URL, {
