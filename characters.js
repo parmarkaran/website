@@ -484,7 +484,7 @@ Style: Energetic! Capitalizes things for EMPHASIS. References Mochi and past dim
 ];
 
 // Custom characters storage key
-const CUSTOM_CHARS_KEY = 'characterverse_custom_chars';
+const CUSTOM_CHARS_KEY = 'soulcaste_custom_chars';
 
 function getCustomCharacters() {
   try {

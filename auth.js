@@ -85,7 +85,7 @@ async function signOut(){
 async function pushCharsToCloud(){
   const sb = _sbClient(); if(!sb || !_user) return;
   try {
-    const data = JSON.parse(localStorage.getItem('characterverse_custom_chars') || '[]');
+    const data = JSON.parse(localStorage.getItem('soulcaste_custom_chars') || '[]');
     await sb.from('cv_characters').upsert({ user_id: _user.id, data, updated_at: new Date().toISOString() });
   } catch(e){ console.warn('[auth] pushChars', e); }
 }
@@ -93,7 +93,7 @@ async function pullCharsFromCloud(){
   const sb = _sbClient(); if(!sb || !_user) return;
   try {
     const { data } = await sb.from('cv_characters').select('data').eq('user_id', _user.id).maybeSingle();
-    if(data?.data) localStorage.setItem('characterverse_custom_chars', JSON.stringify(data.data));
+    if(data?.data) localStorage.setItem('soulcaste_custom_chars', JSON.stringify(data.data));
   } catch(e){ console.warn('[auth] pullChars', e); }
 }
 // Exposed on window so characters.js can call it without importing
@@ -160,7 +160,7 @@ function openLoginModal(){
       ">✕</button>
 
       <div style="font-size:2.4rem;margin-bottom:.6rem">🌌</div>
-      <h2 style="margin:0 0 .4rem;color:#e0d8ff;font-size:1.25rem;font-weight:700">Sign in to CharacterVerse</h2>
+      <h2 style="margin:0 0 .4rem;color:#e0d8ff;font-size:1.25rem;font-weight:700">Sign in to Soulcaste</h2>
       <p style="margin:0 0 1.8rem;color:#6b6490;font-size:.83rem;line-height:1.55">
         Your custom characters &amp; chats sync across all your devices.
       </p>

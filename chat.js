@@ -481,7 +481,7 @@ function renderProfile(){
   });
   document.getElementById('top-ava').textContent  = character.emoji;
   document.getElementById('top-name').textContent = character.name;
-  document.title = `Chat with ${character.name} — CharacterVerse`;
+  document.title = `Chat with ${character.name} — Soulcaste`;
 }
 
 function updateModelBadge(){
@@ -656,7 +656,7 @@ async function streamCompletion(messages, typingId){
           'Content-Type':  'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer':  window.location.origin,
-          'X-Title':       'CharacterVerse',
+          'X-Title':       'Soulcaste',
         },
         signal: abortCtrl.signal,
         body: JSON.stringify({
