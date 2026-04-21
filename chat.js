@@ -36,7 +36,7 @@ function getProvider() {
   const isLocal = ['localhost','127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('192.168.');
   return isLocal ? 'ollama' : 'openrouter';
 }
-function getORKey()    { return localStorage.getItem(OR_KEY_STORE) || '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'; }
+function getORKey()    { return localStorage.getItem(OR_KEY_STORE) || ''; }
 
 // ══════════════════════════════════════════════════════════════
 //  CONVERSATION STORAGE LAYER
