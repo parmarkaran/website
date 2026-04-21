@@ -1,13 +1,11 @@
 // Cloudflare Pages Function — OpenRouter proxy
 // Route: POST /api/chat
-// env.OR_KEY set in Cloudflare Pages dashboard → Settings → Environment variables
+// Env var OR_KEY set in: Pages project → Settings → Environment variables
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
-
-  const userKey  = request.headers.get('X-User-Key');
+export async function onRequestPost({ request, env }) {
+  const userKey = request.headers.get('X-User-Key');
   const ownerKey = env.OR_KEY;
-  const apiKey   = (userKey && userKey.startsWith('sk-')) ? userKey : ownerKey;
+  const apiKey = (userKey && userKey.startsWith('sk-')) ? userKey : ownerKey;
 
   if (!apiKey) {
     return new Response(
@@ -21,20 +19,20 @@ export async function onRequestPost(context) {
   catch { return new Response('Invalid JSON', { status: 400 }); }
 
   const upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method:  'POST',
+    method: 'POST',
     headers: {
-      'Content-Type':  'application/json',
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer':  'https://soulcaste.pages.dev',
-      'X-Title':       'Soulcaste',
+      'HTTP-Referer': 'https://soulcaste.pages.dev',
+      'X-Title': 'Soulcaste',
     },
     body: JSON.stringify(body),
   });
 
   return new Response(upstream.body, {
-    status:  upstream.status,
+    status: upstream.status,
     headers: {
-      'Content-Type':                upstream.headers.get('Content-Type') || 'text/event-stream',
+      'Content-Type': upstream.headers.get('Content-Type') || 'text/event-stream',
       'Access-Control-Allow-Origin': '*',
     },
   });
