@@ -1022,7 +1022,9 @@ function setQuickLength(val){
 // ══════════════════════════════════════════════════════════════
 
 function openModelModal(){
-  const provider = getProvider();
+  const isLocal = ['localhost','127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('192.168.');
+  // On deployed site, always open on OpenRouter tab (Ollama isn't available online)
+  const provider = isLocal ? getProvider() : 'openrouter';
   const model    = getModel();
   const orKey    = getORKey();
 

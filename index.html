@@ -26,7 +26,7 @@
   <ul class="nav-links" id="nav-links">
     <li><a href="#characters">Characters</a></li>
     <li><a href="#create">Create</a></li>
-    <li><a href="#" onclick="openSetupModal();return false" class="nav-pill">🤖 Ollama Setup</a></li>
+    <li id="nav-ollama-btn"><a href="#" onclick="openSetupModal();return false" class="nav-pill">🤖 Ollama Setup</a></li>
   </ul>
   <button class="nav-hist-btn" onclick="openHomeHist()" title="All Chats">💬 Chats</button>
   <button class="auth-login-btn" id="auth-login-btn" onclick="openLoginModal()" style="display:none">Sign In</button>
@@ -766,6 +766,9 @@ document.getElementById('create-overlay').addEventListener('click',function(e){i
 (async function(){
   await initCrypto();
   await initAuth();
+  // Hide Ollama Setup button on deployed site (Ollama only works locally)
+  const isLocal = ['localhost','127.0.0.1'].includes(location.hostname) || location.hostname.startsWith('192.168.');
+  if(!isLocal) document.getElementById('nav-ollama-btn')?.style.setProperty('display','none');
   renderCards();
   renderMyChars();
 })();
